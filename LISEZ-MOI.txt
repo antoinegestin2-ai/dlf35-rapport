@@ -1,0 +1,25 @@
+DLF35 – WEBAPPLICATION INSTALLABLE (PWA) – VERSION DE DÉMONSTRATION
+
+POUR L’OUVRIR SUR IPHONE
+1. Publier le contenu de ce dossier sur un hébergement statique HTTPS (par exemple Netlify Drop ou Cloudflare Pages).
+2. Ouvrir l’adresse HTTPS publiée dans Safari sur l’iPhone.
+3. Safari > Partager > Sur l’écran d’accueil > Ajouter.
+4. Après le premier chargement, l’interface peut s’ouvrir hors connexion ; la synchronisation entre appareils n’est pas disponible.
+
+POUR TESTER SUR ORDINATEUR
+Dans le dossier, exécuter : python -m http.server 8000
+Puis ouvrir http://localhost:8000 dans le navigateur.
+
+FONCTIONS DÉMONSTRATION
+- Logos DLF35 et Groupe BRS extraits des fichiers transmis.
+- 18 menus et 660 entrées récupérés depuis la matrice Word, encore à classer/affiner.
+- Interventions, dommages, sous-dommages, investigations, photos et annotations individuelles.
+- Notes, fiches de liaison signées ajoutées manuellement, archive et sauvegarde JSON.
+- Aperçu et impression PDF approximatifs ; export .doc HTML, PAS un .docx fidèle à la matrice.
+
+LIMITES IMPORTANTES
+- Aucun compte technicien réel ; aucune synchronisation OneDrive.
+- Stockage local du navigateur uniquement, susceptible d’être effacé ou saturé.
+- Ne pas utiliser avec des informations clients réelles ou confidentielles.
+- Les flèches reliant deux photos différentes et le rendu Word exact restent à développer.
+- Un hébergement HTTPS n’est PAS inclus dans ce ZIP : il nécessite une publication.

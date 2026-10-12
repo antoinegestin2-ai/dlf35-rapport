@@ -1,0 +1,5 @@
+DLF35 V7 — Essai partage iPhone
+Le bouton Ouvrir dans Word partage un véritable fichier DOCX via le menu natif iOS.
+La mise en page reste simplifiée et ne reproduit pas encore fidèlement la matrice DLF35.
+Publication : décompresser et déposer le dossier sur Netlify Drop.
+Données locales : ne pas utiliser de données clients réelles.

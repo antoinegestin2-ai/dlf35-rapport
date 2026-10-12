@@ -1,0 +1,1 @@
+DLF35 V8 : le bouton Ouvrir dans Word tente exclusivement le partage natif Safari du fichier DOCX. Aucun téléchargement de secours automatique. En cas d’échec, un message décrit le problème. Télécharger une copie Word reste une action distincte. Connexion OneDrive non intégrée. Mise en page DOCX non conforme à la matrice originale à ce stade.

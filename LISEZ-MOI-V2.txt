@@ -1,0 +1,7 @@
+DLF35 ESSAI V2 — TEST FONCTIONNEL
+
+Nouveautés : création du dossier avant le rapport, brouillon présent dès la création, cases de la page de garde à masquer, synthèse/remarques/conseils facultatifs, disparition dans aperçu et export Word (.doc).
+
+Attention : prototype local sans comptes, sans OneDrive et sans DOCX fidèle à la matrice. Ne pas utiliser de données clients réelles.
+
+Publication : décompresser et déposer le dossier sur Netlify Drop. Utiliser une nouvelle adresse Netlify pour comparer avec V1.

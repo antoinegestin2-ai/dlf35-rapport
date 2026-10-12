@@ -1,0 +1,1 @@
+DLF35 V5 : export Word restauré avec exactement la méthode de téléchargement de la V1 (HTML encodé UTF-8, Blob application/msword, extension .doc). Le contenu du rapport reste celui de la V4 et ne constitue pas un DOCX fidèle à la matrice. Si un ancien site est mis à jour, forcer le rechargement du navigateur pour éviter le cache du service worker.

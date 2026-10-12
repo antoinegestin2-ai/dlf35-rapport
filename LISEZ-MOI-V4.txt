@@ -1,0 +1,9 @@
+DLF35 V4 — prototype de validation
+
+Reprise du mécanisme d’export Word de la V1 (.doc HTML compatible Word), avec une mise en page A4 améliorée, logos et photos en tableaux, et maintien des options facultatives de la V3.
+
+Ce fichier .doc n’est PAS un véritable .docx et ne reproduit PAS encore exactement la matrice Word. Ne pas utiliser pour les dossiers clients réels : stockage local non sécurisé, pas de comptes ni de synchronisation OneDrive.
+
+Pour déployer : décompresser le ZIP et déposer le dossier contenant index.html sur Netlify Drop.
+
+Le navigateur conserve les brouillons locaux de V3 sur le même domaine et navigateur ; un autre site Netlify a un stockage distinct.

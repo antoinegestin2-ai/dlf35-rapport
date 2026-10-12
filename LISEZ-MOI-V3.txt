@@ -1,0 +1,7 @@
+DLF35 V3 — essai sur Netlify
+
+Décompresser puis déposer le dossier contenant index.html sur https://app.netlify.com/drop
+
+Modifications : rubrique Dommages déclarés facultative, insertion immédiate des phrases des menus, export direct Word depuis plusieurs écrans, maintien des options de la V2 et des dossiers créés en amont.
+
+Le fichier Word exporté est au format .doc (HTML compatible Microsoft Word), et NON un .docx fidèle à la matrice originale. Ce prototype est local, sans comptes ni OneDrive. Ne pas utiliser pour des données clients réelles.

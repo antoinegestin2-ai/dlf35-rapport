@@ -1,0 +1,7 @@
+DLF35 V6 — ESSAI IPHONE WORD
+
+Bouton « Ouvrir dans Word sur iPhone » : ouvre la feuille de partage iOS avec le fichier Word .doc, permettant de choisir Word si iOS le propose. Si le partage de fichier est indisponible, téléchargement de secours.
+
+ATTENTION : il ne s’agit pas encore d’un .docx natif ni d’une intégration OneDrive. L’application ne peut pas forcer Word à s’ouvrir. Aucun compte Microsoft n’est connecté à cette maquette. Données locales uniquement, ne pas utiliser de données clients réelles.
+
+Publication : décompresser le ZIP puis glisser le dossier sur Netlify Drop. Tester dans Safari sur iPhone (HTTPS).
