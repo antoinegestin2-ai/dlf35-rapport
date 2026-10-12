@@ -1,35 +1,9 @@
-# DLF35 — Première version GitHub Pages
+# DLF35 — Contrôle de fidélité à la matrice
 
-Cette version est un **prototype** de saisie, pas encore un générateur de rapports conformes au cahier des charges.
+Cette version corrige l'erreur de principe de la précédente maquette : le rendu de référence est issu **directement** de la matrice Word originale, et non redessiné en HTML.
 
-## Publication sur GitHub Pages
+## Installation GitHub Pages
+Copier `index.html`, `matrice_originale.docx` et le dossier `pages/` à la racine du dépôt `dlf35-rapport`, puis activer GitHub Pages depuis la branche `main`, dossier `/ (root)`.
 
-1. Ouvrir le dépôt `antoinegestin2-ai/dlf35-rapport` sur GitHub.
-2. Faire une copie de sauvegarde des fichiers existants.
-3. Ajouter à la racine du dépôt les fichiers `index.html` et `matrice_originale.docx` de cette archive (menu **Add file > Upload files**), puis **Commit changes**.
-4. Dans **Settings > Pages**, choisir **Deploy from a branch**, branche **main**, dossier **/(root)**, puis enregistrer.
-5. Ouvrir `https://antoinegestin2-ai.github.io/dlf35-rapport/` après publication.
-
-## Ce qui fonctionne
-
-- Interface responsive iPhone/Windows.
-- Plusieurs dossiers, dommages, sous-dommages et investigations.
-- Rubriques facultatives et aperçu de contenu.
-- Sauvegarde dans le navigateur (localStorage), export/import JSON.
-- Téléchargement de la matrice d'origine intacte.
-- Export Word expérimental : modification de certains champs administratifs dans le DOCX original, sans recréer la mise en page.
-
-## Limites importantes
-
-- L'export Word **n'intègre pas encore** les dommages, sous-dommages, investigations, photos, synthèse et rubriques finales.
-- Les photos restent seulement en mémoire pendant la session et ne sont pas enregistrées dans les dossiers JSON.
-- Les menus de formulations techniques de la matrice ne sont pas encore intégrés.
-- Pas de comptes techniciens, de serveur, ni de synchronisation OneDrive.
-- Le téléchargement Word dépend de JSZip chargé depuis un CDN et nécessite Internet.
-- Le champ date de la matrice utilise un contrôle de contenu Word et peut nécessiter un traitement spécifique.
-- L'aperçu HTML n'est pas un rendu fidèle de la pagination Word.
-- GitHub Pages est public : **ne pas y placer de dossiers clients ni de rapports confidentiels**. Les données saisies restent dans le navigateur, sauf export manuel.
-
-## Prochaine étape
-
-Créer un générateur DOCX côté serveur qui clone réellement les blocs Word existants et vérifie chaque scénario par rendu page par page, avant de déclarer la conformité.
+## Limites explicites
+Les images de pages sont un aperçu fixe de la matrice vierge, pas un aperçu dynamique des données d'intervention. Le Word fourni est la matrice originale inchangée. Cette livraison ne constitue pas une application complète de rédaction ni un moteur de génération Word. Une solution serveur ou un moteur OOXML avancé sera nécessaire pour répéter les blocs et insérer les photos en conservant le document maître, puis vérifier le rendu page par page.
