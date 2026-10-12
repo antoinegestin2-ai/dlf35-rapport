@@ -1,0 +1,7 @@
+DLF35 V10 — TEST iPHONE
+
+Deux boutons : « Ouvrir directement dans Word » utilise le partage iOS ; « Aperçu Word sur iPhone » essaie un nouvel onglet DOCX local.
+
+IMPORTANT : le second bouton est expérimental. Safari peut télécharger le fichier au lieu de montrer l’écran noir Quick Look. Un lien HTTPS vers un DOCX servi avec les bons en-têtes est nécessaire pour tester un aperçu serveur fiable. Aucun backend OneDrive n’est inclus.
+
+INSTALLATION : envoyer tous les fichiers du ZIP à la racine du dépôt GitHub Pages, remplacer les anciens fichiers, attendre le déploiement puis recharger la page.
