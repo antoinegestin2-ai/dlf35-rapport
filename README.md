@@ -1,9 +1,12 @@
-# DLF35 — Contrôle de fidélité à la matrice
+# DLF35 — Test des menus originaux
 
-Cette version corrige l'erreur de principe de la précédente maquette : le rendu de référence est issu **directement** de la matrice Word originale, et non redessiné en HTML.
+Ouvrir `index.html` dans un navigateur ou publier les fichiers à la racine d'un dépôt GitHub Pages.
 
-## Installation GitHub Pages
-Copier `index.html`, `matrice_originale.docx` et le dossier `pages/` à la racine du dépôt `dlf35-rapport`, puis activer GitHub Pages depuis la branche `main`, dossier `/ (root)`.
+- Les 18 menus sont intégrés à partir du fichier `DLF35_menus_originaux.json`, extrait de la matrice.
+- Sélectionner une phrase : elle apparaît dans la zone modifiable juste sous le menu.
+- Modifier la phrase dans cette même zone, puis cliquer « Ajouter cette formulation ».
+- Chaque formulation ajoutée reste modifiable et supprimable séparément.
+- Enregistrement local dans le navigateur et export JSON des saisies.
+- La matrice Word originale est fournie intacte.
 
-## Limites explicites
-Les images de pages sont un aperçu fixe de la matrice vierge, pas un aperçu dynamique des données d'intervention. Le Word fourni est la matrice originale inchangée. Cette livraison ne constitue pas une application complète de rédaction ni un moteur de génération Word. Une solution serveur ou un moteur OOXML avancé sera nécessaire pour répéter les blocs et insérer les photos en conservant le document maître, puis vérifier le rendu page par page.
+**Limites :** pas encore de génération Word dynamique fidèle, de photos, d'annotations, de sous-dommages ni de synchronisation multi-utilisateurs. Ne pas saisir de données sensibles dans un navigateur partagé.
