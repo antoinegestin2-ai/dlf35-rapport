@@ -1,0 +1,4 @@
+DLF35 V12.2 - Essai ciblé de fidélité Word.
+Conserve l’aperçu Word iPhone.
+Modifications: texte Arial 9 pt dans les cellules de dommages/investigations, champs répartis dans les cellules existantes, titres Synthèse/Remarques préservés.
+LIMITES: aperçu HTML et Word non identiques, photos non exportées par ce moteur, mise en page non validée. Ne pas utiliser pour dossiers réels.
