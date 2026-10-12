@@ -95,22 +95,22 @@ function docxFromMatrix(r,entries){
  const add=node=>body.insertBefore(node,section||null);
  // La première page reste indépendante des dommages, même lorsque le contenu est court.
  const pageStart=element('p'),pagePr=element('pPr'),pageBreak=element('pageBreakBefore');pagePr.appendChild(pageBreak);pageStart.appendChild(pagePr);body.insertBefore(pageStart,tables[3]);
- const addParagraph=(value)=>{
+ const addParagraph=(value,kind='normal')=>{
    if(!String(value||'').trim())return;
    for(const line of String(value).split(/\n/)){
      if(!line.trim())continue;
      const p=element('p'),ppr=element('pPr'),spacing=element('spacing');
-     spacing.setAttributeNS(NS,'w:after','85');ppr.appendChild(spacing);const widow=element('widowControl');ppr.appendChild(widow);p.appendChild(ppr);
+     spacing.setAttributeNS(NS,'w:after',kind==='heading'?'130':'85');ppr.appendChild(spacing);const widow=element('widowControl');ppr.appendChild(widow);p.appendChild(ppr);
      const run=element('r'),rpr=element('rPr'),font=element('rFonts');
      font.setAttributeNS(NS,'w:ascii','Arial');font.setAttributeNS(NS,'w:hAnsi','Arial');rpr.appendChild(font);
-     const size=element('sz');size.setAttributeNS(NS,'w:val','18');rpr.appendChild(size);run.appendChild(rpr);
-     const t=element('t');t.setAttribute('xml:space','preserve');t.textContent=line;run.appendChild(t);p.appendChild(run);add(p);
+     const size=element('sz');size.setAttributeNS(NS,'w:val',kind==='heading'?'24':'18');rpr.appendChild(size);run.appendChild(rpr);
+     const t=element('t');t.setAttribute('xml:space','preserve');t.textContent=line;run.appendChild(t);p.appendChild(run);if(kind==='heading'){const jc=element('jc');jc.setAttributeNS(NS,'w:val','center');ppr.appendChild(jc);const bold=element('b');rpr.appendChild(bold)}add(p);
    }
  };
  const banner=(source,label,newPage=false)=>{
    const table=source.cloneNode(true);
-   const ts=els(table,'t');if(ts.length){ts[0].textContent=label;for(const t of ts.slice(1))t.textContent=''}
-   clearControls(table);const separator=element('p');add(separator);if(newPage){const first=els(table,'p')[0];if(first){let ppr=els(first,'pPr')[0];if(!ppr){ppr=element('pPr');first.insertBefore(ppr,first.firstChild)}ppr.appendChild(element('pageBreakBefore'));}}add(table);
+   const ts=els(table,'t');if(ts.length){const parts=String(label).split('\n');ts[0].textContent=parts[0];for(const t of ts.slice(1))t.textContent='';if(parts.length>1){const firstRun=ts[0].parentNode;for(const part of parts.slice(1)){firstRun.appendChild(element('br'));const tx=element('t');tx.textContent=part;firstRun.appendChild(tx)}}}
+   clearControls(table);if(!newPage){const separator=element('p');add(separator)}if(newPage){const first=els(table,'p')[0];if(first){let ppr=els(first,'pPr')[0];if(!ppr){ppr=element('pPr');first.insertBefore(ppr,first.firstChild)}ppr.appendChild(element('pageBreakBefore'));}}add(table);
  };
  const relPath='word/_rels/document.xml.rels',relNS='http://schemas.openxmlformats.org/package/2006/relationships';
  const relDoc=new DOMParser().parseFromString(dec.decode(map.get(relPath)),'application/xml');
@@ -126,7 +126,7 @@ function docxFromMatrix(r,entries){
    const rel=relDoc.createElementNS(relNS,'Relationship');
    rel.setAttribute('Id',rid);rel.setAttribute('Type','http://schemas.openxmlformats.org/officeDocument/2006/relationships/image');
    rel.setAttribute('Target','media/'+target);relRoot.appendChild(rel);
-   const xml=`<w:p xmlns:w="${NS}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:pPr><w:keepTogether/><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="3300000" cy="2450000"/><wp:docPr id="${id+500}" name="Photographie ${id}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${id+500}" name="Photographie ${id}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="3300000" cy="2450000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;
+   const xml=`<w:p xmlns:w="${NS}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:pPr><w:keepTogether/><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="3000000" cy="2250000"/><wp:docPr id="${id+500}" name="Photographie ${id}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${id+500}" name="Photographie ${id}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="3000000" cy="2250000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;
    return doc.importNode(new DOMParser().parseFromString(xml,'application/xml').documentElement,true);
  };
  const addPhotos=(photos)=>{
@@ -163,14 +163,13 @@ function docxFromMatrix(r,entries){
      .filter(x=>[x.method,x.observations,x.v.place,x.v.room].some(y=>String(y||'').trim())||(x.v.photos||[]).length);
    if(![visual,d.place,d.room].some(x=>String(x||'').trim())&&!(d.photos||[]).length&&!invs.length)continue;
    banner(sourceHeader,d.title||`Dommage n°${di+1}`);
-   addParagraph([d.place,d.room].filter(Boolean).join(' — '));
-   if(visual||(d.photos||[]).length){addParagraph('Visualisation des dommages :');addPhotos(d.photos);addParagraph(visual)}
+   addParagraph('Visualisation des dommages :','heading');if(!visual.includes('Avant nos investigations'))addParagraph('Avant nos investigations, nous procédons à une inspection visuelle des dommages ainsi qu’à des relevés du taux d’humidité dans les matériaux à l’aide d’un testeur à boule capacitive.');addParagraph(d.place?`Logement : ${d.place}`:'');addParagraph(d.room?`Pièce du logement : ${d.room}`:'');addPhotos(d.photos);addParagraph(visual)
    // Never retain blank blue picture placeholders. Actual image placement in
    // matrix cells requires a separate relationship-preserving image engine.
    // Les photos ne sont pas encore exportées dans cet essai : ne pas inventer de contenu.
    if(invs.length){banner(sourceInv,'INVESTIGATIONS\nAU-DROIT DES DOMMAGES',true);
      for(const {v,method,observations} of invs){
-       addParagraph([v.place,v.room].filter(Boolean).join(' — '));addParagraph(method);addPhotos(v.photos);addParagraph(observations);
+       addParagraph(v.place?`Logement : ${v.place}`:'');addParagraph(method);addParagraph(v.room?`Pièce du logement : ${v.room}`:'');addPhotos(v.photos);addParagraph(observations);
        // Aucun emplacement de photo vide n'est ajouté.
      }
    }
