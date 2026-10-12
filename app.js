@@ -17,8 +17,8 @@ function reportHtml(r){
  const block=(title,body)=>`<div class="report-heading">${title}</div>${body}`;
  const header=`<div class="coverhead"><div class="coverlogos"><img src="logo-dlf35.png" alt="DLF35"><img src="logo-brs.png" alt="Groupe BRS"></div><div class="covercontact">3 rue Jacqueline Auriol – Airparc 3<br>35136 ST JACQUES DE LA LANDE<br><br><b>Tél : 02 96 88 06 86<br>Mail : secretariat@dlf35.com</b></div></div><div class="legal">Sarl au capital de 21.000 €<br>Siren : Rennes B 477 783 393</div>`;
  const cover=`<table class="covertable" cellspacing="0" cellpadding="0">${line('Adresse de l’intervention',r.address,'address')}${line('Date de l’intervention',r.date,'date')}${line('Nos références',r.ref,'ref')}${line('Numéro de devis',r.devis,'devis')}${line('Mandant',r.mandant,'mandant')}${line('Référence mandat',r.refmandant,'refmandant')}${line('Assurance',r.assurance,'assurance')}${line('Référence assurance',r.refassurance,'refassurance')}${line('Intervention réalisée par',r.technician,'technician')}</table>`;
- const declared=r.declaredEnabled!==true?'':block('DOMMAGES DÉCLARÉS',r.damage.filter(d=>String(d.description||'').trim()).map(d=>`<p><b>${fmt(d.title)}</b> : ${fmt(d.description)}</p>`).join(''));
- const damage=r.damage.map(d=>block(fmt(d.title).toUpperCase(),`<h3>Visualisation des dommages</h3>${d.place||d.room?`<p><u>${fmt([d.place,d.room].filter(Boolean).join(' — '))}</u></p>`:''}${pic(d.photos)}${textFor(r,`damage.${r.damage.indexOf(d)}.visual`,d.visual)?`<p>${fmt(textFor(r,`damage.${r.damage.indexOf(d)}.visual`,d.visual))}</p>`:''}${block('INVESTIGATIONS AU-DROIT DES DOMMAGES',d.investigations.map(v=>`<div class="investigation">${v.place||v.room?`<p><u>${fmt([v.place,v.room].filter(Boolean).join(' — '))}</u></p>`:''}${v.method?`<p>${fmt(v.method)}</p>`:''}${pic(v.photos)}${v.observations?`<p>➜ ${fmt(v.observations)}</p>`:''}</div>`).join(''))}`)).join('');
+ const declarations=r.damage.filter(d=>String(d.description||'').trim());const declared=r.declaredEnabled===true&&declarations.length?block('DOMMAGES DÉCLARÉS',declarations.map(d=>`<p><b>${fmt(d.title)}</b> : ${fmt(d.description)}</p>`).join('')):'';
+ const damage=r.damage.map((d,di)=>{const visual=textFor(r,`damage.${di}.visual`,d.visual);const investigations=(d.investigations||[]).map((v,i)=>{const method=textFor(r,`damage.${di}.investigations.${i}.method`,v.method),obs=textFor(r,`damage.${di}.investigations.${i}.observations`,v.observations);return [v.place,v.room,method,obs,(v.photos||[]).length].some(Boolean)?`<div class="investigation">${v.place||v.room?`<p><u>${fmt([v.place,v.room].filter(Boolean).join(' — '))}</u></p>`:''}${method?`<p>${fmt(method)}</p>`:''}${pic(v.photos)}${obs?`<p>${fmt(obs)}</p>`:''}</div>`:''}).join('');if(![visual,d.place,d.room,investigations,(d.photos||[]).length].some(Boolean))return '';return block(fmt(d.title||`Dommage n°${di+1}`).toUpperCase(),`<h3>Visualisation des dommages</h3>${d.place||d.room?`<p><u>${fmt([d.place,d.room].filter(Boolean).join(' — '))}</u></p>`:''}${pic(d.photos)}${visual?`<p>${fmt(visual)}</p>`:''}${investigations?block('INVESTIGATIONS AU-DROIT DES DOMMAGES',investigations):''}`)}).join('');
  return `<div class="word-report"><div class="report-page coverpage">${header}${block('RAPPORT D’INVESTIGATIONS',cover)}</div><div class="report-page">${block('RECHERCHES DE FUITES',declared+damage)}${sectionOn(r).summary&&r.summary?block('SYNTHÈSE DES CONSTATATIONS',`<p>${fmt(r.summary)}</p>`):''}${sectionOn(r).remarks&&r.remarks?block('REMARQUES PARTICULIÈRES',`<p>${fmt(r.remarks)}</p>`):''}${sectionOn(r).advice&&r.advice?block('CONSEILS ET PRÉCONISATIONS',`<p>${fmt(r.advice)}</p>`):''}<p class="report-footer">Restant à votre disposition pour des renseignements complémentaires.</p></div></div>`;
 }
 function attach(e){[...e.target.files].forEach(f=>{let rd=new FileReader();rd.onload=()=>{cur().attachments.push({name:f.name,data:rd.result});save();render()};rd.readAsDataURL(f)})}function exportJson(){let blob=new Blob([JSON.stringify(cur(),null,2)],{type:'application/json'});download(blob,`${cur().ref||'intervention'}-dossier.json`)}function download(blob,name){let a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),3000)}// Véritable document Office Open XML (DOCX), partage natif iOS.
@@ -93,12 +93,14 @@ function docxFromMatrix(r,entries){
  const section=Array.from(body.children).find(n=>n.localName==='sectPr');
  let node=tables[3].nextSibling;while(node&&node!==section){const next=node.nextSibling;body.removeChild(node);node=next}
  const add=node=>body.insertBefore(node,section||null);
+ // La première page reste indépendante des dommages, même lorsque le contenu est court.
+ const pageStart=element('p'),pagePr=element('pPr'),pageBreak=element('pageBreakBefore');pagePr.appendChild(pageBreak);pageStart.appendChild(pagePr);body.insertBefore(pageStart,tables[3]);
  const addParagraph=(value)=>{
    if(!String(value||'').trim())return;
    for(const line of String(value).split(/\n/)){
      if(!line.trim())continue;
      const p=element('p'),ppr=element('pPr'),spacing=element('spacing');
-     spacing.setAttributeNS(NS,'w:after','100');ppr.appendChild(spacing);p.appendChild(ppr);
+     spacing.setAttributeNS(NS,'w:after','85');ppr.appendChild(spacing);const widow=element('widowControl');ppr.appendChild(widow);p.appendChild(ppr);
      const run=element('r'),rpr=element('rPr'),font=element('rFonts');
      font.setAttributeNS(NS,'w:ascii','Arial');font.setAttributeNS(NS,'w:hAnsi','Arial');rpr.appendChild(font);
      const size=element('sz');size.setAttributeNS(NS,'w:val','18');rpr.appendChild(size);run.appendChild(rpr);
@@ -110,6 +112,22 @@ function docxFromMatrix(r,entries){
    const ts=els(table,'t');if(ts.length){ts[0].textContent=label;for(const t of ts.slice(1))t.textContent=''}
    clearControls(table);add(table);
  };
+ const relPath='word/_rels/document.xml.rels',relNS='http://schemas.openxmlformats.org/package/2006/relationships';
+ const relDoc=new DOMParser().parseFromString(dec.decode(map.get(relPath)),'application/xml');
+ const relRoot=relDoc.documentElement;let nextRel=1;for(const el of Array.from(relRoot.children)){const m=(el.getAttribute('Id')||'').match(/^rId(\d+)$/);if(m)nextRel=Math.max(nextRel,+m[1]+1)}
+ let photoNumber=0;
+ const addPhoto=(photo)=>{
+   const match=String(photo?.data||'').match(/^data:image\/(png|jpeg|jpg);base64,([\s\S]+)$/);if(!match)return;
+   const ext=match[1]==='png'?'png':'jpeg';let bytes;try{bytes=Uint8Array.from(atob(match[2]),c=>c.charCodeAt(0))}catch{return}
+   const id=++photoNumber,rid='rId'+nextRel++,target='dlf35-photo-'+id+'.'+ext;
+   map.set('word/media/'+target,bytes);
+   const rel=relDoc.createElementNS(relNS,'Relationship');rel.setAttribute('Id',rid);rel.setAttribute('Type','http://schemas.openxmlformats.org/officeDocument/2006/relationships/image');rel.setAttribute('Target','media/'+target);relRoot.appendChild(rel);
+   const p=element('p'),ppr=element('pPr'),keep=element('keepTogether');ppr.appendChild(keep);p.appendChild(ppr);
+   const r=element('r'),drawing=element('drawing');
+   const fragment=new DOMParser().parseFromString(`<root xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="4200000" cy="2900000"/><wp:docPr id="${id+500}" name="Photographie ${id}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${id+500}" name="Photographie ${id}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="4200000" cy="2900000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></root>`,'application/xml');
+   drawing.appendChild(doc.importNode(fragment.documentElement.firstElementChild,true));r.appendChild(drawing);p.appendChild(r);add(p);
+ };
+ const addPhotos=(photos)=>{for(const photo of photos||[])addPhoto(photo)};
  const damages=r.damage||[];
  if(r.declaredEnabled===true){
    const descriptions=damages.map(d=>d.description).filter(x=>String(x||'').trim());
@@ -123,13 +141,13 @@ function docxFromMatrix(r,entries){
    if(![visual,d.place,d.room].some(x=>String(x||'').trim())&&!(d.photos||[]).length&&!invs.length)continue;
    banner(sourceHeader,d.title||`Dommage n°${di+1}`);
    addParagraph([d.place,d.room].filter(Boolean).join(' — '));
-   if(visual){addParagraph('Visualisation des dommages :');addParagraph(visual)}
+   if(visual||(d.photos||[]).length){addParagraph('Visualisation des dommages :');addPhotos(d.photos);addParagraph(visual)}
    // Never retain blank blue picture placeholders. Actual image placement in
    // matrix cells requires a separate relationship-preserving image engine.
    // Les photos ne sont pas encore exportées dans cet essai : ne pas inventer de contenu.
    if(invs.length){banner(sourceInv,'INVESTIGATIONS AU-DROIT DES DOMMAGES');
      for(const {v,method,observations} of invs){
-       addParagraph([v.place,v.room].filter(Boolean).join(' — '));addParagraph(method);addParagraph(observations);
+       addParagraph([v.place,v.room].filter(Boolean).join(' — '));addParagraph(method);addPhotos(v.photos);addParagraph(observations);
        // Aucun emplacement de photo vide n'est ajouté.
      }
    }
@@ -138,7 +156,7 @@ function docxFromMatrix(r,entries){
  if(sec.summary&&String(r.summary||'').trim()){banner(tables[8],'SYNTHÈSE DES CONSTATATIONS');addParagraph(textFor(r,'summary',r.summary))}
  if(sec.remarks&&String(r.remarks||'').trim()){banner(tables[9],'Remarque(s) particulière(s)');addParagraph(textFor(r,'remarks',r.remarks))}
  if(sec.advice&&String(r.advice||'').trim())addParagraph('Conseils : '+textFor(r,'advice',r.advice));
- map.set('word/document.xml',enc.encode(new XMLSerializer().serializeToString(doc)));
+ map.set('word/document.xml',enc.encode(new XMLSerializer().serializeToString(doc)));map.set(relPath,enc.encode(new XMLSerializer().serializeToString(relDoc)));
  return zipOffice([...map.entries()]);
 }
 let matrixPromise=null;async function wordFile(){const r=cur();if(!r){alert('Créez d’abord un dossier.');return null}if(!matrixPromise)matrixPromise=fetch('./matrice-dlf35.docx').then(x=>{if(!x.ok)throw Error('Matrice Word introuvable : '+x.status);return x.arrayBuffer()}).then(b=>readStoredDocx(new Uint8Array(b))).catch(e=>{matrixPromise=null;throw e});const entries=await matrixPromise;return new File([docxFromMatrix(r,entries)],`${(r.ref||'Rapport').replace(/[^a-z0-9_-]/gi,'_')}-DLF35.docx`,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})}

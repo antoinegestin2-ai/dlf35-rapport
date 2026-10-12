@@ -1,0 +1,1 @@
+DLF35 V12.7 - test de structure Word. Correction des sauts de page, suppression des dommages déclarés vides, export des textes de menus pour les investigations, export des photos JPEG/PNG dans Word. Version expérimentale : vérifier visuellement Word et iPhone. Les anciens dossiers restent dans le stockage local du navigateur.\n
