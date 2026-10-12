@@ -38,69 +38,91 @@ const entries=[['[Content_Types].xml',contentTypes],['_rels/.rels',`<?xml versio
 // V12: genuine original DLF35 Word matrix, with its existing logos, styles and cover tables.
 function readStoredDocx(bytes){const entries=[];const dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);let p=0,dec=new TextDecoder();while(p+30<bytes.length&&dv.getUint32(p,true)===0x04034b50){let flags=dv.getUint16(p+6,true),method=dv.getUint16(p+8,true),size=dv.getUint32(p+18,true),nl=dv.getUint16(p+26,true),xl=dv.getUint16(p+28,true);if(flags&8||method!==0)throw Error('Format de matrice non pris en charge');let name=dec.decode(bytes.subarray(p+30,p+30+nl)),begin=p+30+nl+xl;entries.push([name,bytes.slice(begin,begin+size)]);p=begin+size}return entries}
 function docxFromMatrix(r,entries){
- const enc=new TextEncoder(),dec=new TextDecoder(),map=new Map(entries);
- const NS='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+ const enc=new TextEncoder(),dec=new TextDecoder(),map=new Map(entries),NS='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
  const doc=new DOMParser().parseFromString(dec.decode(map.get('word/document.xml')),'application/xml');
  if(doc.querySelector('parsererror'))throw Error('Matrice Word XML invalide');
  const els=(node,tag)=>Array.from(node.getElementsByTagNameNS(NS,tag));
- const body=els(doc,'body')[0];
- const tables=Array.from(body.childNodes).filter(n=>n.localName==='tbl');
- if(tables.length<10)throw Error('La matrice originale est incomplète');
- const txt=node=>els(node,'t').map(x=>x.textContent).join('');
- const xmlEscapeLocal=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
- const fragment=xml=>new DOMParser().parseFromString('<root xmlns:w="'+NS+'">'+xml+'</root>','application/xml').documentElement.firstElementChild;
- // Insert new content into the original cells without creating unstyled Word paragraphs.
- const append=(cell,value,style)=>{
-   const valueText=String(value??'').trim();if(!valueText)return;
-   const ps=els(cell,'p');const base=ps[0];if(!base)return;
-   const lines=valueText.split(/\n/);
-   for(let i=0;i<lines.length;i++){
-     const p=i===0?base:base.cloneNode(true);
-     if(i>0)cell.appendChild(p);
-     for(const t of els(p,'t'))t.textContent='';
-     let run=els(p,'r')[0];
-     if(!run){run=doc.createElementNS(NS,'w:r');p.appendChild(run)}
-     let rpr=els(run,'rPr')[0];if(!rpr){rpr=doc.createElementNS(NS,'w:rPr');run.insertBefore(rpr,run.firstChild)}
-     if(!els(rpr,'rFonts').length){const f=doc.createElementNS(NS,'w:rFonts');f.setAttributeNS(NS,'w:ascii','Arial');f.setAttributeNS(NS,'w:hAnsi','Arial');rpr.appendChild(f)}
-     if(!els(rpr,'sz').length){const z=doc.createElementNS(NS,'w:sz');z.setAttributeNS(NS,'w:val','18');rpr.appendChild(z)}
-     const t=doc.createElementNS(NS,'w:t');t.setAttribute('xml:space','preserve');t.textContent=lines[i];run.appendChild(t);
+ const body=els(doc,'body')[0],tables=Array.from(body.children).filter(n=>n.localName==='tbl');
+ if(tables.length<10)throw Error('Matrice originale incomplète');
+ const element=(tag)=>doc.createElementNS(NS,'w:'+tag);
+ const text=node=>els(node,'t').map(x=>x.textContent).join('');
+ const clearControls=node=>{for(const sdt of [...els(node,'sdt')].reverse())if(sdt.parentNode)sdt.parentNode.removeChild(sdt)};
+ const setCell=(cell,value,keepLabel=false)=>{
+   clearControls(cell);
+   const ps=els(cell,'p');let p=ps[0];if(!p){p=element('p');cell.appendChild(p)}
+   if(!keepLabel){for(const t of els(cell,'t'))t.textContent='';}
+   const valueString=String(value??'').trim();if(!valueString)return;
+   const lines=valueString.split(/\n/);
+   lines.forEach((line,i)=>{
+     const target=i===0?p:p.cloneNode(false);
+     if(i>0)cell.appendChild(target);
+     const run=element('r'),rpr=element('rPr'),font=element('rFonts');
+     font.setAttributeNS(NS,'w:ascii','Arial');font.setAttributeNS(NS,'w:hAnsi','Arial');rpr.appendChild(font);
+     const sz=element('sz');sz.setAttributeNS(NS,'w:val','20');rpr.appendChild(sz);run.appendChild(rpr);
+     const t=element('t');t.setAttribute('xml:space','preserve');t.textContent=(keepLabel&&i===0?'  ':'')+line;run.appendChild(t);target.appendChild(run);
+   });
+ };
+ // Replace cover values in their original Word cells, never in a separate generic table.
+ const cover=tables[2],rows=els(cover,'tr');
+ const fields={0:['address'],2:['date'],3:['ref'],4:['devis'],5:['mandant'],6:['refmandant'],7:['assurance'],8:['refassurance'],9:['technician']};
+ for(const [index,keys] of Object.entries(fields)){
+   const cells=Array.from(rows[+index].children).filter(n=>n.localName==='tc');
+   const key=keys[0],enabled=coverOn(r)[key]!==false,val=enabled?(r[key]||''):'';
+   const cell=cells[1]||cells[0];setCell(cell,val,cells.length===1);
+   if(!enabled && +index>=4 && +index<=8)rows[+index].remove();
+ }
+ // Remove all source-only content after RECHERCHES DE FUITES. The original
+ // photograph placeholders, Word instructions and unused sample text must not leak.
+ const sourceHeader=tables[4],sourceInv=tables[6];
+ const section=Array.from(body.children).find(n=>n.localName==='sectPr');
+ let node=tables[3].nextSibling;while(node&&node!==section){const next=node.nextSibling;body.removeChild(node);node=next}
+ const add=node=>body.insertBefore(node,section||null);
+ const addParagraph=(value)=>{
+   if(!String(value||'').trim())return;
+   for(const line of String(value).split(/\n/)){
+     if(!line.trim())continue;
+     const p=element('p'),ppr=element('pPr'),spacing=element('spacing');
+     spacing.setAttributeNS(NS,'w:after','100');ppr.appendChild(spacing);p.appendChild(ppr);
+     const run=element('r'),rpr=element('rPr'),font=element('rFonts');
+     font.setAttributeNS(NS,'w:ascii','Arial');font.setAttributeNS(NS,'w:hAnsi','Arial');rpr.appendChild(font);
+     const size=element('sz');size.setAttributeNS(NS,'w:val','18');rpr.appendChild(size);run.appendChild(rpr);
+     const t=element('t');t.setAttribute('xml:space','preserve');t.textContent=line;run.appendChild(t);p.appendChild(run);add(p);
    }
  };
- const cover={address:r.address,date:r.date,ref:r.ref,devis:r.devis,mandant:r.mandant,refmandant:r.refmandant,assurance:r.assurance,refassurance:r.refassurance,technician:r.technician};
- const coverXml=tables[2];
- for(let [k,v] of Object.entries(cover)){
-   for(const t of els(coverXml,'t'))if(t.textContent.includes('{{'+k+'}}'))t.textContent=t.textContent.replace('{{'+k+'}}',coverOn(r)[k]===false?'':String(v||''));
+ const banner=(source,label)=>{
+   const table=source.cloneNode(true);
+   const ts=els(table,'t');if(ts.length){ts[0].textContent=label;for(const t of ts.slice(1))t.textContent=''}
+   clearControls(table);add(table);
+ };
+ const damages=r.damage||[];
+ if(r.declaredEnabled===true){
+   const descriptions=damages.map(d=>d.description).filter(x=>String(x||'').trim());
+   if(descriptions.length){addParagraph('Dommages déclarés :');for(const v of descriptions)addParagraph(v)}
  }
- // Preserve the real Word table formats for damage, photos, investigations and conclusions.
- const damageHeader=tables[4],damageGrid=tables[5],investHeader=tables[6],investGrid=tables[7];
- const clearTemplateText=(node)=>{for(const t of els(node,'t'))t.textContent='';};
- const addCellText=(table,text,position)=>{let cells=els(table,'tc');if(cells.length&&String(text||'').trim())append(cells[Math.min(position??0,cells.length-1)],text)};
- const clones=[];
- for(const d of (r.damage||[]).filter(d=>[d.description,textFor(r,`damage.${r.damage.indexOf(d)}.visual`,d.visual),d.place,d.room].some(x=>String(x||'').trim())||(d.photos||[]).length||(d.investigations||[]).some(v=>[textFor(r,`damage.${r.damage.indexOf(d)}.investigations.${d.investigations.indexOf(v)}.method`,v.method),v.place,v.room,textFor(r,`damage.${r.damage.indexOf(d)}.investigations.${d.investigations.indexOf(v)}.observations`,v.observations)].some(x=>String(x||'').trim())||(v.photos||[]).length))){
-   const head=damageHeader.cloneNode(true),grid=damageGrid.cloneNode(true);clearTemplateText(grid);
-   for(const t of els(head,'t'))if(/DOMMAGE N/i.test(t.textContent))t.textContent=d.title||'DOMMAGE';
-   addCellText(grid,[d.place,d.room].filter(Boolean).join(' — '),0);
-   addCellText(grid,d.description,1);addCellText(grid,textFor(r,`damage.${r.damage.indexOf(d)}.visual`,d.visual),2);
-   clones.push(head,grid);
-   for(const inv of (d.investigations||[]).filter(v=>[textFor(r,`damage.${r.damage.indexOf(d)}.investigations.${d.investigations.indexOf(v)}.method`,v.method),v.place,v.room,textFor(r,`damage.${r.damage.indexOf(d)}.investigations.${d.investigations.indexOf(v)}.observations`,v.observations)].some(x=>String(x||'').trim())||(v.photos||[]).length)){
-     const ih=investHeader.cloneNode(true),ig=investGrid.cloneNode(true);clearTemplateText(ig);
-     addCellText(ig,[inv.place,inv.room].filter(Boolean).join(' — '),0);
-     addCellText(ig,textFor(r,`damage.${r.damage.indexOf(d)}.investigations.${d.investigations.indexOf(inv)}.method`,inv.method),1);addCellText(ig,textFor(r,`damage.${r.damage.indexOf(d)}.investigations.${d.investigations.indexOf(inv)}.observations`,inv.observations),2);
-     clones.push(ih,ig);
+ for(let di=0;di<damages.length;di++){
+   const d=damages[di];
+   const visual=textFor(r,`damage.${di}.visual`,d.visual);
+   const invs=(d.investigations||[]).map((v,i)=>({v,i,method:textFor(r,`damage.${di}.investigations.${i}.method`,v.method),observations:textFor(r,`damage.${di}.investigations.${i}.observations`,v.observations)}))
+     .filter(x=>[x.method,x.observations,x.v.place,x.v.room].some(y=>String(y||'').trim())||(x.v.photos||[]).length);
+   if(![visual,d.place,d.room].some(x=>String(x||'').trim())&&!(d.photos||[]).length&&!invs.length)continue;
+   banner(sourceHeader,d.title||`Dommage n°${di+1}`);
+   addParagraph([d.place,d.room].filter(Boolean).join(' — '));
+   if(visual){addParagraph('Visualisation des dommages :');addParagraph(visual)}
+   // Never retain blank blue picture placeholders. Actual image placement in
+   // matrix cells requires a separate relationship-preserving image engine.
+   // Les photos ne sont pas encore exportées dans cet essai : ne pas inventer de contenu.
+   if(invs.length){banner(sourceInv,'INVESTIGATIONS AU-DROIT DES DOMMAGES');
+     for(const {v,method,observations} of invs){
+       addParagraph([v.place,v.room].filter(Boolean).join(' — '));addParagraph(method);addParagraph(observations);
+       // Aucun emplacement de photo vide n'est ajouté.
+     }
    }
  }
- // The next damage (including sub-damage) is inserted after the preceding investigations.
- const first=damageHeader;for(const n of clones)body.insertBefore(n,first);
- for(const old of [damageHeader,damageGrid,investHeader,investGrid])body.removeChild(old);
  const sec=sectionOn(r);
- for(const [i,key] of [[8,'summary'],[9,'remarks']]){
-   if(!sec[key]||!String(r[key]||'').trim()){body.removeChild(tables[i]);continue}
-   const cell=els(tables[i],'tc')[0];if(cell){const p=doc.createElementNS(NS,'w:p');cell.appendChild(p);const run=doc.createElementNS(NS,'w:r');p.appendChild(run);const rp=doc.createElementNS(NS,'w:rPr');run.appendChild(rp);const rf=doc.createElementNS(NS,'w:rFonts');rf.setAttributeNS(NS,'w:ascii','Arial');rf.setAttributeNS(NS,'w:hAnsi','Arial');rp.appendChild(rf);const sz=doc.createElementNS(NS,'w:sz');sz.setAttributeNS(NS,'w:val','18');rp.appendChild(sz);const t=doc.createElementNS(NS,'w:t');t.textContent=r[key];run.appendChild(t);}
- }
- if(sec.advice&&r.advice){let last=tables[9];let p=doc.importNode(fragment(wordParagraph('Conseils et préconisations : '+r.advice)),true);body.insertBefore(p,last.nextSibling)}
- // Remove blank source matrix paragraphs but do not rewrite its section properties or logos.
- const xml=new XMLSerializer().serializeToString(doc);
- map.set('word/document.xml',enc.encode(xml));
+ if(sec.summary&&String(r.summary||'').trim()){banner(tables[8],'SYNTHÈSE DES CONSTATATIONS');addParagraph(textFor(r,'summary',r.summary))}
+ if(sec.remarks&&String(r.remarks||'').trim()){banner(tables[9],'Remarque(s) particulière(s)');addParagraph(textFor(r,'remarks',r.remarks))}
+ if(sec.advice&&String(r.advice||'').trim())addParagraph('Conseils : '+textFor(r,'advice',r.advice));
+ map.set('word/document.xml',enc.encode(new XMLSerializer().serializeToString(doc)));
  return zipOffice([...map.entries()]);
 }
 let matrixPromise=null;async function wordFile(){const r=cur();if(!r){alert('Créez d’abord un dossier.');return null}if(!matrixPromise)matrixPromise=fetch('./matrice-dlf35.docx').then(x=>{if(!x.ok)throw Error('Matrice Word introuvable : '+x.status);return x.arrayBuffer()}).then(b=>readStoredDocx(new Uint8Array(b))).catch(e=>{matrixPromise=null;throw e});const entries=await matrixPromise;return new File([docxFromMatrix(r,entries)],`${(r.ref||'Rapport').replace(/[^a-z0-9_-]/gi,'_')}-DLF35.docx`,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})}

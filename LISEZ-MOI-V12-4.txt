@@ -1,0 +1,3 @@
+DLF35 V12.4 — essai structurel, NON CONFORME pour rapports clients.
+Améliorations : suppression des paragraphes et champs exemples, dommages déclarés facultatifs, valeurs dans les cellules originales, suppression des cadres photos vides, numérotation corrigée, aperçu Word iPhone conservé.
+Limites : photos NON intégrées au Word, police/pagination et aperçu HTML non garantis identiques à la matrice.
