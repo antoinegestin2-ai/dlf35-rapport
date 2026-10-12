@@ -1,0 +1,7 @@
+DLF35 V12.3 — essai ergonomie
+- Dommages déclarés désactivés par défaut pour les nouveaux dossiers.
+- Chaque liste de formulations possède sa zone de modification indépendante.
+- Les textes de chaque liste sont intégrés dans les données du rapport.
+- Aperçu Word iPhone inchangé.
+ATTENTION : fidélité visuelle du Word à la matrice non encore garantie, et export des photographies non résolu.
+Les dossiers locaux existants ne sont pas effacés.
