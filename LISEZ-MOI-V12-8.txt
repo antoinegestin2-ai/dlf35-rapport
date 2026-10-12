@@ -1,0 +1,8 @@
+DLF35 V12.8 — essai de retour à la matrice originale (3)
+- Matrice fournie à nouveau par l'utilisateur, intégrée sans compression pour le moteur existant.
+- Photographies disposées dans des tableaux Word de deux colonnes.
+- Investigations séparées sur une nouvelle page selon la matrice.
+- Rubrique Dommages déclarés omise si elle est vide ou désactivée.
+- Date de couverture au format français.
+LIMITES : le moteur DOCX reste expérimental, rendu final non certifié identique à la matrice.
+Ne pas utiliser pour des dossiers clients réels sans validation complète.
