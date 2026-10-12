@@ -1,0 +1,1 @@
+DLF35 V12.1 — essai : menus d’origine menus.json, procédé visuel, boutons aperçus en fin de rapport, suppression du texte automatique non sélectionné. Limite : fidélité typographique et pagination Word non encore validées. Ne pas utiliser pour dossiers clients réels.
