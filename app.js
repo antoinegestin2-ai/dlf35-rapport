@@ -33,27 +33,21 @@ const document=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:docume
 const contentTypes=`<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`;
 const entries=[['[Content_Types].xml',contentTypes],['_rels/.rels',`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`],['word/document.xml',document],['word/_rels/document.xml.rels',`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels.join('')}</Relationships>`],...media];return zipOffice(entries)}
 function wordFile(){const r=cur();if(!r){alert('Créez d’abord un dossier.');return null}return new File([docxBytes(r)],`${(r.ref||'Rapport').replace(/[^a-z0-9_-]/gi,'_')}-DLF35.docx`,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})}
+function wordShareStatus(message){
+ let el=document.getElementById('word-share-status');
+ if(!el){el=document.createElement('div');el.id='word-share-status';el.setAttribute('role','status');el.style.cssText='position:fixed;bottom:14px;left:12px;right:12px;z-index:9999;background:#fff;border:2px solid #166b85;border-radius:12px;padding:16px;box-shadow:0 3px 24px #0004;max-width:650px;margin:auto;white-space:pre-wrap';document.body.appendChild(el)}
+ el.textContent=message+'\n';let b=document.createElement('button');b.textContent='Fermer';b.style.marginTop='12px';b.onclick=()=>el.remove();el.appendChild(b)
+}
 async function openInWord(){
-  // Safari requires a direct user gesture and a File payload. Never silently download.
-  let file;
-  try { file=wordFile(); } catch(err){alert('Impossible de générer le rapport Word : '+err.message);return}
-  if(!file)return;
-  if(typeof navigator.share!=='function'){
-    alert('Safari ne propose pas le partage de fichiers dans ce contexte. Aucun téléchargement n’a été lancé. Ouvrez le site directement dans Safari (pas dans un navigateur intégré), puis réessayez.');return;
-  }
-  let canShare=true;
-  if(typeof navigator.canShare==='function'){
-    try{canShare=navigator.canShare({files:[file]})}catch(err){canShare=false}
-  }
-  if(!canShare){
-    alert('Safari refuse le partage de ce fichier DOCX ('+Math.round(file.size/1024)+' Ko). Aucun téléchargement n’a été lancé. Vous pouvez essayer avec un rapport contenant moins de photos, ou utiliser « Télécharger une copie Word » volontairement.');return;
-  }
-  try{
-    await navigator.share({files:[file]});
-  }catch(err){
-    if(err?.name==='AbortError')return;
-    alert('Le partage iPhone n’a pas pu être ouvert : '+(err?.message||'erreur inconnue')+'. Aucun téléchargement automatique.');
-  }
+ // The only path from this button is the OS share sheet. No anchor, download or redirect.
+ let file;
+ try{file=wordFile()}catch(e){wordShareStatus('Erreur de génération DOCX : '+e.message);return}
+ if(!file)return;
+ const data={files:[file],title:'Rapport DLF35',text:'Ouvrir le rapport DLF35 dans Microsoft Word'};
+ if(!navigator.share){wordShareStatus('Le partage de fichiers n’est pas disponible dans ce navigateur. Aucun téléchargement lancé. Essayez Safari sur iPhone.');return}
+ if(navigator.canShare && !navigator.canShare({files:[file]})){wordShareStatus('iOS refuse le partage de ce fichier ('+Math.round(file.size/1024)+' Ko). Aucun téléchargement lancé. Le bouton de copie reste disponible séparément.');return}
+ try{wordShareStatus('Ouverture du menu de partage iOS…');await navigator.share(data);document.getElementById('word-share-status')?.remove()}
+ catch(e){if(e.name==='AbortError'){document.getElementById('word-share-status')?.remove();return}wordShareStatus('Partage impossible : '+e.name+' — '+e.message+'\nAucun téléchargement automatique. Le navigateur décide quelles applications sont proposées.')} 
 }
 function exportWord(){const file=wordFile();if(file)download(file,file.name)}
 render();
