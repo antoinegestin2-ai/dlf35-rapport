@@ -1,0 +1,6 @@
+DLF35 V11 — prototype matrice Word originale.
+Copier TOUS les fichiers à la racine de GitHub Pages, y compris matrice-dlf35.docx.
+L’aperçu iPhone de la V10 est conservé.
+La matrice Word originale est utilisée pour ses logos, ses styles, sa page de garde et ses tableaux.
+Les sections dynamiques sont encore en cours d’amélioration (photos et sauts de pages à vérifier).
+Ne pas utiliser pour des dossiers clients réels avant validation.

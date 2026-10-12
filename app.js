@@ -32,7 +32,15 @@ const sections=sectionOn(r);if(sections.summary&&r.summary){para('SYNTHÈSE DES 
 const document=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>${parts.join('')}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134"/></w:sectPr></w:body></w:document>`;
 const contentTypes=`<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`;
 const entries=[['[Content_Types].xml',contentTypes],['_rels/.rels',`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`],['word/document.xml',document],['word/_rels/document.xml.rels',`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels.join('')}</Relationships>`],...media];return zipOffice(entries)}
-function wordFile(){const r=cur();if(!r){alert('Créez d’abord un dossier.');return null}return new File([docxBytes(r)],`${(r.ref||'Rapport').replace(/[^a-z0-9_-]/gi,'_')}-DLF35.docx`,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})}
+// V11: genuine original DLF35 Word matrix, with its existing logos, styles and cover tables.
+function readStoredDocx(bytes){const entries=[];const dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);let p=0,dec=new TextDecoder();while(p+30<bytes.length&&dv.getUint32(p,true)===0x04034b50){let flags=dv.getUint16(p+6,true),method=dv.getUint16(p+8,true),size=dv.getUint32(p+18,true),nl=dv.getUint16(p+26,true),xl=dv.getUint16(p+28,true);if(flags&8||method!==0)throw Error('Format de matrice non pris en charge');let name=dec.decode(bytes.subarray(p+30,p+30+nl)),begin=p+30+nl+xl;entries.push([name,bytes.slice(begin,begin+size)]);p=begin+size}return entries}
+function docxFromMatrix(r,entries){const enc=new TextEncoder(),dec=new TextDecoder();let map=new Map(entries);let xml=dec.decode(map.get('word/document.xml'));const fields={address:r.address||'',address2:'',date:r.date||'',ref:r.ref||'',devis:r.devis||'',mandant:r.mandant||'',refmandant:r.refmandant||'',assurance:r.assurance||'',refassurance:r.refassurance||'',technician:r.technician||''};const cf=coverOn(r);for(const [k,v] of Object.entries(fields))xml=xml.replace('{{'+k+'}}',xmlEscape(cf[k]===false?'':v));
+let media=[],rels=[],imageId=5000;const pic=(p)=>{let raw=p?.data||p?.src||p?.url||p;let m=typeof raw==='string'&&raw.match(/^data:image\/(png|jpeg|jpg);base64,(.*)$/);if(!m)return '';let ext=m[1]==='png'?'png':'jpeg',bytes;try{bytes=Uint8Array.from(atob(m[2]),c=>c.charCodeAt(0))}catch(e){return ''}let id=imageId++,name='v11-photo-'+id+'.'+ext;media.push(['word/media/'+name,bytes]);rels.push('<Relationship Id="rIdDLF'+id+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/'+name+'"/>');return '<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><wp:extent cx="4300000" cy="2900000"/><wp:docPr id="'+id+'" name="Photo '+id+'"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="'+id+'" name="Photo"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="rIdDLF'+id+'"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="4300000" cy="2900000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>'};
+let blocks=[];const add=(v,style)=>{if(String(v||'').trim())blocks.push(wordParagraph(v,style))};const addPics=a=>{for(let p of a||[])blocks.push(pic(p))};addPics(r.coverPhotos);if(r.declaredEnabled!==false){add('DOMMAGES DÉCLARÉS','title');for(let d of r.damage||[])add((d.title||'Dommage')+(d.description?' : '+d.description:''))}for(let d of r.damage||[]){add(d.title||'DOMMAGE','title');add('Visualisation des dommages','subtitle');add([d.place,d.room].filter(Boolean).join(' — '));addPics(d.photos);add(d.visual);for(let v of d.investigations||[]){add('INVESTIGATIONS AU-DROIT DES DOMMAGES','subtitle');add([v.place,v.room].filter(Boolean).join(' — '));add(v.method);addPics(v.photos);add(v.observations)}}const s=sectionOn(r);if(s.summary&&r.summary){add('SYNTHÈSE DES CONSTATATIONS','title');add(r.summary)}if(s.remarks&&r.remarks){add('Remarque(s) particulière(s)','title');add(r.remarks)}if(s.advice&&r.advice){add('Conseils et préconisations','title');add(r.advice)}
+// Replace the marker paragraph while preserving the surrounding matrix XML.
+xml=xml.replace(/<w:p\b[^>]*>(?:(?!<w:p\b)[\s\S])*?DLF35_DYNAMIC_CONTENT[\s\S]*?<\/w:p>/,blocks.join(''));
+map.set('word/document.xml',enc.encode(xml));let relpath='word/_rels/document.xml.rels',relxml=dec.decode(map.get(relpath));relxml=relxml.replace('</Relationships>',rels.join('')+'</Relationships>');map.set(relpath,enc.encode(relxml));for(let [name,bytes] of media)map.set(name,bytes);return zipOffice([...map.entries()])}
+let matrixPromise=null;async function wordFile(){const r=cur();if(!r){alert('Créez d’abord un dossier.');return null}if(!matrixPromise)matrixPromise=fetch('./matrice-dlf35.docx').then(x=>{if(!x.ok)throw Error('Matrice Word introuvable : '+x.status);return x.arrayBuffer()}).then(b=>readStoredDocx(new Uint8Array(b))).catch(e=>{matrixPromise=null;throw e});const entries=await matrixPromise;return new File([docxFromMatrix(r,entries)],`${(r.ref||'Rapport').replace(/[^a-z0-9_-]/gi,'_')}-DLF35.docx`,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})}
 function wordShareStatus(message){
  let el=document.getElementById('word-share-status');
  if(!el){el=document.createElement('div');el.id='word-share-status';el.setAttribute('role','status');el.style.cssText='position:fixed;bottom:14px;left:12px;right:12px;z-index:9999;background:#fff;border:2px solid #166b85;border-radius:12px;padding:16px;box-shadow:0 3px 24px #0004;max-width:650px;margin:auto;white-space:pre-wrap';document.body.appendChild(el)}
@@ -41,7 +49,7 @@ function wordShareStatus(message){
 async function openInWord(){
  // The only path from this button is the OS share sheet. No anchor, download or redirect.
  let file;
- try{file=wordFile()}catch(e){wordShareStatus('Erreur de génération DOCX : '+e.message);return}
+ try{file=await wordFile()}catch(e){wordShareStatus('Erreur de génération DOCX : '+e.message);return}
  if(!file)return;
  const data={files:[file],title:'Rapport DLF35',text:'Ouvrir le rapport DLF35 dans Microsoft Word'};
  if(!navigator.share){wordShareStatus('Le partage de fichiers n’est pas disponible dans ce navigateur. Aucun téléchargement lancé. Essayez Safari sur iPhone.');return}
@@ -51,12 +59,12 @@ async function openInWord(){
 }
 // Experimental local preview: iOS may preview a DOCX Blob URL or download it.
 // A reliable iOS Quick Look page requires an HTTPS-served DOCX with correct headers.
-function previewWordOnIphone(){
+async function previewWordOnIphone(){
  let tab=null;
  try{
   // Open during the click gesture to avoid popup blockers on iOS.
   tab=window.open('about:blank','_blank');
-  const file=wordFile();if(!file){if(tab)tab.close();return}
+  const file=await wordFile();if(!file){if(tab)tab.close();return}
   const url=URL.createObjectURL(file);
   if(tab){tab.location.replace(url)}
   else{wordShareStatus('Le navigateur a bloqué le nouvel onglet. Autorisez les fenêtres surgissantes, ou utilisez « Ouvrir directement dans Word ».');URL.revokeObjectURL(url);return}
@@ -64,5 +72,5 @@ function previewWordOnIphone(){
   setTimeout(()=>URL.revokeObjectURL(url),120000);
  }catch(e){if(tab)tab.close();wordShareStatus('Aperçu impossible : '+e.message+'\nSur certains iPhone, les URL locales DOCX provoquent un téléchargement. L’aperçu exact de la capture nécessite un document servi depuis une URL HTTPS.');}
 }
-function exportWord(){const file=wordFile();if(file)download(file,file.name)}
+async function exportWord(){try{const file=await wordFile();if(file)download(file,file.name)}catch(e){wordShareStatus("Erreur Word : "+e.message)}}
 render();
