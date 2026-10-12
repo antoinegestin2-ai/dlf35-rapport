@@ -1,0 +1,1 @@
+V12 expérimentale : matrice Word originale, tableaux de dommages et investigations dupliqués, sous-dommages après les investigations, deux aperçus uniquement. Les photos Word et la pagination ne sont pas encore conformes. Ne pas utiliser en production.
