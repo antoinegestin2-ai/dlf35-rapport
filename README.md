@@ -1,3 +1,1 @@
-DLF35 — Test de remplissage de la matrice originale.
-Sélection automatique, édition indépendante et menu humidité original.
-Dans « Contenu saisi » : exporter le Word test. Le remplissage ne couvre que certains contrôles du premier dommage et de la première investigation. Aucun clonage de dommage ni insertion photo dynamique. Pagination non garantie. L'export nécessite Internet pour JSZip.
+DLF35 — Test corrigé : les contrôles Word ont été vérifiés dans la matrice originale. Export du premier dommage et de la première investigation. Limites : pas de duplication des blocs, photos dynamiques, ni aperçu Word rempli. La pagination n’est pas garantie.
