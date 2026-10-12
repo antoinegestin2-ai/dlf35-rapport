@@ -62,14 +62,25 @@ function docxFromMatrix(r,entries){
      const t=element('t');t.setAttribute('xml:space','preserve');t.textContent=(keepLabel&&i===0?'  ':'')+line;run.appendChild(t);target.appendChild(run);
    });
  };
- // Replace cover values in their original Word cells, never in a separate generic table.
+ // Cover is rebuilt from the validated white-cell Word table, not overlaid on old text.
  const cover=tables[2],rows=els(cover,'tr');
- const fields={0:['address'],2:['date'],3:['ref'],4:['devis'],5:['mandant'],6:['refmandant'],7:['assurance'],8:['refassurance'],9:['technician']};
- for(const [index,keys] of Object.entries(fields)){
-   const cells=Array.from(rows[+index].children).filter(n=>n.localName==='tc');
-   const key=keys[0],enabled=coverOn(r)[key]!==false,val=enabled?(r[key]||''):'';
-   const cell=cells[1]||cells[0];setCell(cell,val,cells.length===1);
-   if(!enabled && +index>=4 && +index<=8)rows[+index].remove();
+ const coverItems=[['Adresse de l’intervention :','address',true],['Date de l’intervention :','date',true],['Nos références :','ref',true],['Référence devis :','devis',false],['Mandant :','mandant',false],['Référence mandant :','refmandant',false],['Assurance :','assurance',false],['Référence assurance :','refassurance',false],['Intervention réalisée par :','technician',true]];
+ const prototype=rows[3].cloneNode(true);
+ for(const row of rows)row.parentNode.removeChild(row);
+ for(const [label,key,required] of coverItems){
+   const enabled=required||coverOn(r)[key]!==false;
+   const value=String(r[key]||'').trim();
+   if(!enabled||(!required&&!value))continue;
+   const row=prototype.cloneNode(true);
+   const cells=Array.from(row.children).filter(n=>n.localName==='tc');
+   setCell(cells[0],label);setCell(cells[1],value);
+   for(const cell of cells){
+     for(const shd of els(cell,'shd'))shd.parentNode.removeChild(shd);
+     for(const child of Array.from(cell.children))if(child.localName==='tcPr'){
+       for(const shd of els(child,'shd'))shd.parentNode.removeChild(shd);
+     }
+   }
+   cover.appendChild(row);
  }
  // Remove all source-only content after RECHERCHES DE FUITES. The original
  // photograph placeholders, Word instructions and unused sample text must not leak.
