@@ -1,0 +1,5 @@
+DLF35 V12.6 - correction ciblée du générateur Word et de l’aperçu dans l’application.
+Correction de l’erreur rows[3] : restauration de la matrice originale à 10 lignes.
+En-tête de prévisualisation réorganisé, logos côte à côte, photo exclue de la garde, tableau blanc.
+ATTENTION : export des photos dans le DOCX et conformité visuelle complète restent à réaliser.
+Ne pas utiliser pour des rapports clients définitifs.
